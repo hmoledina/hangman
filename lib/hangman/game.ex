@@ -187,9 +187,6 @@ Here's this module being exercised from an iex session:
   def make_move(state, guess) do
    response_make_move(%UpdateState{state | letters_used_so_far: state.letters_used_so_far ++ [guess]}, guess, String.contains?(state.word,guess),state.attempts_left, !String.contains?(state.blanks,"_"))
   end
-  #def find_indexes(collection, function) do
-      #Enum.filter_map(Enum.with_index(collection), fn({x, _y}) -> function.(x) end, elem(&1, 1))
-    #end
 
   @doc """
   `len = Hangman.Game.word_length(game)`
@@ -250,12 +247,10 @@ Here's this module being exercised from an iex session:
 defp handle_word_as_string(state, true) do
 String.codepoints(state.word)
 |> Enum.join(" ")
- end
+end
 
- defp handle_word_as_string(state, false) do
-
+defp handle_word_as_string(state, false) do
  state.blanks
-
 end
 
 defp blank_print(word) do
@@ -268,15 +263,14 @@ defp response_make_move(state, guess, true, _, false) do
   index= String.codepoints(state.word)
    |> Enum.with_index()
    |> Enum.filter_map(fn {x, _} -> x == guess end, fn {_, i} -> i end)
-
   blanks = Enum.reduce(index, state.blanks, fn(index, acc_str) ->
   String.split(acc_str, " ") |> List.replace_at(index, guess) |> Enum.join(" ")
   end)
   if(String.contains?(blanks, "_")) do
-  {%UpdateState{ state | blanks: blanks},:good_guess, guess}
-else
-{%UpdateState{ state | blanks: blanks},:won, guess}
-end
+    {%UpdateState{ state | blanks: blanks},:good_guess, guess}
+  else
+    {%UpdateState{ state | blanks: blanks},:won, guess}
+  end
 end
 
 defp response_make_move(state, guess, false, 1,_) do
