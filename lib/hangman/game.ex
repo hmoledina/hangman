@@ -1,5 +1,5 @@
 defmodule Hangman.Game do
-
+import Hangman.Dictionary
   @moduledoc """
 
   This is the backend for a Hangman game. It manages the game state.
@@ -107,7 +107,7 @@ Here's this module being exercised from an iex session:
 
     iex(13)> { game, state, guess } = G.make_move(game, "b")
     . . .
-    iex(14)> state                                          
+    iex(14)> state
     :bad_guess
 
     iex(15)> { game, state, guess } = G.make_move(game, "f")
@@ -135,6 +135,10 @@ Here's this module being exercised from an iex session:
   @type ch    :: binary
   @type optional_ch :: ch | nil
 
+  defmodule UpdateState do
+    defstruct word: "", guess: nil, blanks: "", attempts_left: 10, letters_used_so_far: []
+  end
+
   @doc """
   Run a game of Hangman with our user. Use the dictionary to
   find a random word, and then let the user make guesses.
@@ -142,6 +146,9 @@ Here's this module being exercised from an iex session:
 
   @spec new_game :: state
   def new_game do
+    word= Hangman.Dictionary.random_word()
+    %UpdateState{word: word,guess: nil, blanks: blank_print(word), attempts_left: 10, letters_used_so_far: []}
+  #(%{ word: Hangman.Dictionary.random_word(), guess: "a", blanks: nil, attempts_left: 10})
   end
 
 
@@ -152,6 +159,7 @@ Here's this module being exercised from an iex session:
   """
   @spec new_game(binary) :: state
   def new_game(word) do
+  %UpdateState{word: word,guess: nil, blanks: blank_print(word), attempts_left: 10, letters_used_so_far: []}
   end
 
 
@@ -177,8 +185,11 @@ Here's this module being exercised from an iex session:
 
   @spec make_move(state, ch) :: { state, atom, optional_ch }
   def make_move(state, guess) do
+   response_make_move(%UpdateState{state | letters_used_so_far: state.letters_used_so_far ++ [guess]}, guess, String.contains?(state.word,guess),state.attempts_left, !String.contains?(state.blanks,"_"))
   end
-
+  #def find_indexes(collection, function) do
+      #Enum.filter_map(Enum.with_index(collection), fn({x, _y}) -> function.(x) end, elem(&1, 1))
+    #end
 
   @doc """
   `len = Hangman.Game.word_length(game)`
@@ -187,6 +198,7 @@ Here's this module being exercised from an iex session:
   """
   @spec word_length(state) :: integer
   def word_length(%{ word: word }) do
+    String.length(word)
   end
 
   @doc """
@@ -199,6 +211,7 @@ Here's this module being exercised from an iex session:
 
   @spec letters_used_so_far(state) :: [ binary ]
   def letters_used_so_far(state) do
+    state.letters_used_so_far
   end
 
   @doc """
@@ -211,6 +224,7 @@ Here's this module being exercised from an iex session:
 
   @spec turns_left(state) :: integer
   def turns_left(state) do
+    state.attempts_left
   end
 
   @doc """
@@ -223,13 +237,57 @@ Here's this module being exercised from an iex session:
   """
 
   @spec word_as_string(state, boolean) :: binary
-  def word_as_string(state, reveal \\ false) do
+  def word_as_string(state,reveal \\ false) do
+    handle_word_as_string(state,reveal)
   end
+
 
   ###########################
   # end of public interface #
   ###########################
 
   # Your private functions go here
-
+defp handle_word_as_string(state, true) do
+String.codepoints(state.word)
+|> Enum.join(" ")
  end
+
+ defp handle_word_as_string(state, false) do
+
+ state.blanks
+
+end
+
+defp blank_print(word) do
+  String.duplicate(IO.chardata_to_string("_ "), String.length(word))
+  |> String.trim_trailing
+end
+
+
+defp response_make_move(state, guess, true, _, false) do
+  index= String.codepoints(state.word)
+   |> Enum.with_index()
+   |> Enum.filter_map(fn {x, _} -> x == guess end, fn {_, i} -> i end)
+
+  blanks = Enum.reduce(index, state.blanks, fn(index, acc_str) ->
+  String.split(acc_str, " ") |> List.replace_at(index, guess) |> Enum.join(" ")
+  end)
+  if(String.contains?(blanks, "_")) do
+  {%UpdateState{ state | blanks: blanks},:good_guess, guess}
+else
+{%UpdateState{ state | blanks: blanks},:won, guess}
+end
+end
+
+defp response_make_move(state, guess, false, 1,_) do
+  {%UpdateState{state | attempts_left: state.attempts_left-1},:lost, nil}
+end
+
+#defp response_make_move(state, guess, true, _, true) do
+#  {%UpdateState{state | guess: guess},:won, guess}
+#end
+
+defp response_make_move(state, guess, false, _, _) do
+  {%UpdateState{state | attempts_left: state.attempts_left-1},:bad_guess, guess}
+end
+end
