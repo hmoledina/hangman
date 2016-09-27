@@ -136,7 +136,11 @@ Here's this module being exercised from an iex session:
   @type optional_ch :: ch | nil
 
   defmodule UpdateState do
-    defstruct word: "", guess: nil, blanks: "", attempts_left: 10, letters_used_so_far: []
+    defstruct(word:                "",
+              guess:               nil,
+              blanks:              "",
+              attempts_left:       10,
+              letters_used_so_far: [])
   end
 
   @doc """
@@ -147,8 +151,11 @@ Here's this module being exercised from an iex session:
   @spec new_game :: state
   def new_game do
     word= Hangman.Dictionary.random_word()
-    %UpdateState{word: word,guess: nil, blanks: blank_print(word), attempts_left: 10, letters_used_so_far: []}
-  #(%{ word: Hangman.Dictionary.random_word(), guess: "a", blanks: nil, attempts_left: 10})
+    %UpdateState{word: word,
+                 guess: nil,
+                 blanks: blank_print(word),
+                 attempts_left: 10,
+                 letters_used_so_far: []}
   end
 
 
@@ -159,7 +166,11 @@ Here's this module being exercised from an iex session:
   """
   @spec new_game(binary) :: state
   def new_game(word) do
-  %UpdateState{word: word,guess: nil, blanks: blank_print(word), attempts_left: 10, letters_used_so_far: []}
+    %UpdateState{word: word,
+                 guess: nil,
+                 blanks: blank_print(word),
+                 attempts_left: 10,
+                 letters_used_so_far: []}
   end
 
 
@@ -239,6 +250,17 @@ Here's this module being exercised from an iex session:
   end
 
 
+  @doc """
+  Return a list of tuples, the first element is the character from
+  the word and the second is `true` this this character has been guessed.
+  """
+  @spec word_state(state) :: [ { binary, boolean } ]
+  def word_state(state) do
+    state.word
+    |> String.codepoints
+    |> Enum.map(fn ch -> { ch, letter_used(state, ch) } end )
+  end
+
   ###########################
   # end of public interface #
   ###########################
@@ -282,6 +304,14 @@ end
 #end
 
 defp response_make_move(state, guess, false, _, _) do
-  {%UpdateState{state | attempts_left: state.attempts_left-1},:bad_guess, guess}
+  {
+    %UpdateState{state | attempts_left: state.attempts_left-1},
+    :bad_guess,
+    guess
+  }
+end
+
+defp letter_used(state, letter) do
+  !!Enum.find(state.letters_used_so_far, &(&1 == letter))
 end
 end

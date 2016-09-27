@@ -27,7 +27,7 @@ defmodule Hangman.ComputerPlayer do
     IO.puts "#{inspect guess} was good"
     IO.puts Game.word_as_string(game)
     IO.puts ""
-    solver = remove_impossible(solver, game.word, guess)
+    solver = remove_impossible(solver, Game.word_state(game), guess)
     make_a_move(game, solver)
   end
 
@@ -38,7 +38,7 @@ defmodule Hangman.ComputerPlayer do
 
     current = solver.candidate_words
     new_words = remove_words_with_letter(current, guess)
-    |> remove_words_not_matching_pattern(game.word)
+    |> remove_words_not_matching_pattern(Game.word_state(game))
 
     solver = %{ solver | candidate_words: new_words }
     make_a_move(game, solver)
@@ -73,7 +73,7 @@ defmodule Hangman.ComputerPlayer do
 
     ch = << ch :: utf8 >>
 
-    if guess_is_possible(solver, game[:word], ch) do
+    if guess_is_possible(solver, Game.word_state(game), ch) do
       IO.inspect "#{ch} is possible"
       { solver, ch }
     else
@@ -135,7 +135,7 @@ defmodule Hangman.ComputerPlayer do
   # open spot.
 
   defp guess_is_possible(solver, word, guess_ch) do
-    to_check = Enum.map(word, fn {_ch, known } -> !known end)
+    to_check = Enum.map(word, fn {_ch, known} -> !known end)
     check_possibilities(solver.candidate_words, guess_ch, to_check)
   end
 
