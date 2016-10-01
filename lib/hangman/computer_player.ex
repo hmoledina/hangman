@@ -6,15 +6,7 @@ defmodule Hangman.ComputerPlayer do
   def play do
     game   = Game.new_game
     length = Game.word_length(game)
-    list = ["e","s","i","a","r","n","t",
-            "o","l","c","d","u","p","m",
-            "g","h","b","y","f","v","k",
-            "w","z","x","q","j"]
-    #solver = %{
-    #  candidate_words: load_words_of_length(length),
-    #  letters_left:    (?a..?z) |>Enum.into([]),
-    #}
-
+    list = get_list(length)
     make_a_move(game,list)
   end
 
@@ -31,7 +23,6 @@ defmodule Hangman.ComputerPlayer do
     IO.puts "#{inspect guess} was good"
     IO.puts Game.word_as_string(game)
     IO.puts ""
-  #  solver = remove_impossible(solver, game.word, guess)
     make_a_move(game,list)
   end
 
@@ -39,13 +30,6 @@ defmodule Hangman.ComputerPlayer do
     IO.puts "#{inspect guess} was bad"
     IO.puts Game.word_as_string(game)
     IO.puts ""
-
-
-  #  current = solver.candidate_words
-  #  new_words = remove_words_with_letter(current, guess)
-  #  |> remove_words_not_matching_pattern(game.word)
-
-  #  solver = %{ solver | candidate_words: new_words }
     make_a_move(game,list)
   end
 
@@ -57,59 +41,42 @@ defmodule Hangman.ComputerPlayer do
     IO.puts "I lost. The word was: #{Game.word_as_string(game, true)}"
   end
 
-
   def get_guess(game,list) do
     v = List.first(list)
     list=List.delete_at(list, 0)
     {v,list}
   end
 
-  # We need to know whether there is any place that a guess could
-  # fit. A new guess can only go where there's an underscore
-  # in the game state, so we check all the candidate words to
-  # see if our guess letter appears in any of them at any
-  # open spot.
+#get list takes all the words with particular length, calculates the frequencies
+#and sorts them according to their frequencies. It then returns a list with the
+#highest to lowest frequency alphabets
 
+  defp get_list(length) do
+    candidate_words = load_words_of_length(length)
+    list = conv_char(candidate_words)
+    |> List.flatten
+    |> Enum.filter(fn c -> c =~ ~r/[a-z]/ end)
+    |> Enum.reduce(Map.new, fn c,acc -> Map.update(acc, c, 1, &(&1+1)) end)
+    |> Enum.sort_by(fn {_k,v} -> -v end)
+    |> make_list
+    |>List.flatten
+  end
 
+  defp load_words_of_length(len) do
+    Hangman.Dictionary.words_of_length(len)
+  end
 
+  defp conv_char([h|t]) do
+    list2 = [String.codepoints(h)|conv_char(t)]
+  end
 
+  defp conv_char([]), do: []
 
-  # defp check_candidates_for_letter_in_slot([], _, _) do
-  #   false
-  # end
-  #
-  # defp check_candidates_for_letter_in_slot([ {candidate,_} | rest], guess, to_check) do
-  #   chars = candidate |> String.codepoints
-  #   if check_one_word_for_letter_in_slot(chars, to_check, guess) do
-  #     true
-  #   else
-  #     check_candidates_for_letter_in_slot(rest, guess, to_check)
-  #   end
-  # end
-  #
-  # defp check_one_word_for_letter_in_slot([], [], _) do
-  #   false
-  # end
-  #
-  # defp check_one_word_for_letter_in_slot([actual | _rest_c],
-  #                                       [true   | _rest_t],
-  #                                       actual) do
-  #   true
-  # end
-  #
-  #
-  #
-  #
-  # defp check_one_word_for_letter_in_slot([_    | rest_c],
-  #                                       [_    | rest_t],
-  #                                       actual) do
-  #   check_one_word_for_letter_in_slot(rest_c, rest_t, actual)
-  # end
+  defp make_list([]), do: []
 
-
-
-
-
+  defp make_list([h|t]) do
+    list3 = [Tuple.to_list(Tuple.delete_at(h, 1))|make_list(t)]
+  end
 
 
 end
